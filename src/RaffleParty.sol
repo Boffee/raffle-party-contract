@@ -40,7 +40,12 @@ contract RaffleParty {
     GLOBAL STATE
     */
 
+    // weight in basis points
     uint64 public constant BASE_WEIGHT = 10000;
+
+    // royalty in basis points
+    uint256 public baseRoyalty = 250;
+    uint256 public overflowRoyalty = 5000;
 
     uint256 public raffleCount;
 
@@ -302,7 +307,45 @@ contract RaffleParty {
         // NOTE may overflow
         return
             (raffleAccountWeights[raffleId][account] *
-                getTotalSales(raffleId)) / raffles[raffleId].totalWeight;
+                getClaimableAmount(raffleId)) / raffles[raffleId].totalWeight;
+    }
+
+    /**
+     * @notice get total royalty amount from sales
+     * @param raffleId the id of the raffle to get total royalty amount for
+     * @return royaltyAmount the total royalty amount from sales
+     */
+    function getRoyaltyAmount(uint256 raffleId)
+        public
+        view
+        returns (uint256 royaltyAmount)
+    {
+        uint256 totalSales = getTotalSales(raffleId);
+        uint256 minimumSales = getMinimumSales(raffleId);
+        return
+            minimumSales *
+            baseRoyalty +
+            overflowRoyalty *
+            (totalSales - minimumSales);
+    }
+
+    /**
+     * @notice get total claimable sales (sales - royalty)
+     * @param raffleId the id of the raffle to get total claimable sales for
+     * @return claimableAmount the total claimable sales
+     */
+    function getClaimableAmount(uint256 raffleId)
+        public
+        view
+        returns (uint256 claimableAmount)
+    {
+        uint256 totalSales = getTotalSales(raffleId);
+        uint256 minimumSales = getMinimumSales(raffleId);
+        return
+            (10000 - baseRoyalty) *
+            baseRoyalty +
+            (10000 - overflowRoyalty) *
+            (totalSales - minimumSales);
     }
 
     function getTotalSales(uint256 raffleId)
@@ -313,6 +356,17 @@ contract RaffleParty {
         return
             raffleTickets[raffleId][raffleTickets[raffleId].length - 1].endId *
             raffles[raffleId].ticketPrice;
+    }
+
+    function getMinimumSales(uint256 raffleId)
+        public
+        view
+        returns (uint256 minimumSales)
+    {
+        return
+            (raffles[raffleId].minTickets *
+                raffles[raffleId].ticketPrice *
+                raffles[raffleId].totalWeight) / 10000;
     }
 
     /**
@@ -355,6 +409,20 @@ contract RaffleParty {
         ticketId =
             uint256(keccak256((abi.encode(raffleId, prizeIndex)))) %
             rafflePrizes[raffleId].length;
+    }
+
+    /*
+    OWNER FUNCTIONS
+    */
+
+    function setBaseRoyalty(uint256 _baseRoyalty) public {
+        require(_baseRoyalty <= 10000, "Royalty must be <= 10000");
+        baseRoyalty = _baseRoyalty;
+    }
+
+    function setOverflowRoyalty(uint256 _overflowRoyalty) public {
+        require(_overflowRoyalty <= 10000, "Royalty must be <= 10000");
+        overflowRoyalty = _overflowRoyalty;
     }
 
     /*

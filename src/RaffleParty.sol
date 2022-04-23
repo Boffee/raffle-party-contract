@@ -11,7 +11,7 @@ contract RaffleParty {
         address tokenAddress;
         uint96 tokenId;
         address owner;
-        uint88 weight;
+        uint64 weight;
         bool claimed;
     }
 
@@ -22,7 +22,7 @@ contract RaffleParty {
 
     struct PoolPrizeTokenConfig {
         address tokenAddress;
-        uint88 weight;
+        uint64 weight;
     }
 
     struct Raffle {
@@ -37,10 +37,10 @@ contract RaffleParty {
     }
 
     /*
-   GLOBAL STATE
-   */
+    GLOBAL STATE
+    */
 
-    uint88 public constant BASE_WEIGHT = 10000;
+    uint64 public constant BASE_WEIGHT = 10000;
 
     uint256 public raffleCount;
 
@@ -49,10 +49,11 @@ contract RaffleParty {
     mapping(uint256 => PoolPrizeTokenConfig[])
         public rafflePoolPrizeTokenConfigs;
     mapping(uint256 => Ticket[]) public raffleTickets;
+    mapping(uint256 => mapping(address => uint96)) public raffleAccountWeights;
 
     /*
-  WRITE FUNCTIONS
-  */
+    WRITE FUNCTIONS
+    */
 
     /**
      * @notice initializes the raffle
@@ -103,6 +104,8 @@ contract RaffleParty {
                 claimed: false
             })
         );
+
+        raffleAccountWeights[raffleId][msg.sender] = BASE_WEIGHT;
     }
 
     function addPoolPrize(
@@ -124,6 +127,8 @@ contract RaffleParty {
                 claimed: false
             })
         );
+
+        raffleAccountWeights[raffleId][msg.sender] += config.weight;
     }
 
     function cancelRaffle(uint256 raffleId) public {
@@ -206,6 +211,26 @@ contract RaffleParty {
     }
 
     /**
+     * @notice claim share of sales for providing prize
+     * @param account the account to claim the share of sales for
+     * @param raffleId the id of the raffle to claim share of sales for
+     */
+    function claimSales(address account, uint256 raffleId) public {
+        uint256 amount = getAccountTokenClaimAmount(account, raffleId);
+        require(amount > 0, "No sales to claim");
+        if (raffles[raffleId].paymentToken == address(0)) {
+            (bool sent, ) = account.call{value: amount}("");
+            require(sent, "Failed to send funds");
+        } else {
+            IERC20(raffles[raffleId].paymentToken).transferFrom(
+                address(this),
+                account,
+                amount
+            );
+        }
+    }
+
+    /**
      * @dev sends ticket to account
      * @param to the account to send ticket to
      * @param raffleId the id of the raffle to send ticket for
@@ -224,8 +249,8 @@ contract RaffleParty {
     }
 
     /*
-  READ FUNCTIONS
-  */
+    READ FUNCTIONS
+    */
 
     /**
      * @notice get config for pool prize
@@ -267,6 +292,27 @@ contract RaffleParty {
             ticketId
         );
         return raffleTickets[raffleId][ticketPurchaseIndex].owner;
+    }
+
+    function getAccountTokenClaimAmount(address account, uint256 raffleId)
+        public
+        view
+        returns (uint256 amount)
+    {
+        // NOTE may overflow
+        return
+            (raffleAccountWeights[raffleId][account] *
+                getTotalSales(raffleId)) / raffles[raffleId].totalWeight;
+    }
+
+    function getTotalSales(uint256 raffleId)
+        public
+        view
+        returns (uint256 totalSales)
+    {
+        return
+            raffleTickets[raffleId][raffleTickets[raffleId].length - 1].endId *
+            raffles[raffleId].ticketPrice;
     }
 
     /**
@@ -312,6 +358,6 @@ contract RaffleParty {
     }
 
     /*
-  MODIFIERS
-  */
+    MODIFIERS
+    */
 }

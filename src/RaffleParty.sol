@@ -29,6 +29,7 @@ contract RaffleParty is Ownable {
     struct Raffle {
         address creator;
         uint256 ticketPrice;
+        bytes32 requestId;
         address paymentToken;
         uint96 minTickets;
         uint96 seed;
@@ -56,6 +57,7 @@ contract RaffleParty is Ownable {
         public rafflePoolPrizeTokenConfigs;
     mapping(uint256 => Ticket[]) public raffleTickets;
     mapping(uint256 => mapping(address => uint96)) public raffleAccountWeights;
+    mapping(bytes32 => uint256) public requestIdToRaffleId;
 
     /*
     WRITE FUNCTIONS
@@ -97,6 +99,7 @@ contract RaffleParty is Ownable {
             endTimestamp: endTimestamp,
             minTickets: minTickets,
             ticketPrice: ticketPrice,
+            requestId: bytes32(0),
             seed: 0,
             totalWeight: 10000
         });
@@ -234,6 +237,39 @@ contract RaffleParty is Ownable {
                 amount
             );
         }
+    }
+
+    /**
+     * Initialize seed for raffle
+     */
+    function initializeSeed(uint256 raffleId) public {
+        Raffle memory raffle = raffles[raffleId];
+        require(raffle.endTimestamp < block.timestamp, "Raffle has not ended");
+        require(raffle.seed == 0, "Seed already initialized");
+        fakeRequestRandomWords(raffleId);
+    }
+
+    /**
+     * Fake chainlink request
+     */
+    function fakeRequestRandomWords(uint256 raffleId) internal {
+        // generate pseudo random words
+        bytes32 requestId = bytes32(abi.encodePacked(block.number));
+        requestIdToRaffleId[requestId] = raffleId;
+        uint256[] memory randomWords = new uint256[](1);
+        randomWords[0] = uint256(keccak256(abi.encodePacked(block.timestamp)));
+        fulfillRandomWords(requestId, randomWords);
+    }
+
+    /**
+     * Callback function used by VRF Coordinator
+     */
+    function fulfillRandomWords(bytes32 requestId, uint256[] memory randomWords)
+        internal
+    {
+        // TODO replace with chainlink
+        uint256 raffleId = requestIdToRaffleId[requestId];
+        raffles[raffleId].seed = uint96(randomWords[0]);
     }
 
     /**

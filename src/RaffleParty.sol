@@ -21,6 +21,11 @@ contract RaffleParty is Ownable {
         uint96 endId;
     }
 
+    struct RoyaltyPriceIndex {
+        uint32 blockNumber;
+        uint224 value;
+    }
+
     struct PoolPrizeTokenConfig {
         address tokenAddress;
         uint64 weight;
@@ -58,6 +63,9 @@ contract RaffleParty is Ownable {
     mapping(uint256 => Ticket[]) public raffleTickets;
     mapping(uint256 => mapping(address => uint96)) public raffleAccountWeights;
     mapping(bytes32 => uint256) public requestIdToRaffleId;
+
+    mapping(address => RoyaltyPriceIndex[]) public royaltyPriceIndices;
+    mapping(address => mapping(uint256 => uint256)) public blockNumberToIndex;
 
     /*
     WRITE FUNCTIONS
@@ -247,7 +255,22 @@ contract RaffleParty is Ownable {
         Raffle memory raffle = raffles[raffleId];
         require(raffle.endTimestamp < block.timestamp, "Raffle has not ended");
         require(raffle.seed == 0, "Seed already initialized");
+        uint224 royaltyAmount = uint224(getRoyaltyAmount(raffleId));
+        accumulateRoyalty(raffle.paymentToken, royaltyAmount);
         fakeRequestRandomWords(raffleId);
+    }
+
+    function accumulateRoyalty(address tokenAddress, uint224 amount) internal {
+        uint256 index = royaltyPriceIndices[tokenAddress].length;
+        blockNumberToIndex[tokenAddress][block.number] = index;
+        uint224 cumulativeRoyalty = royaltyPriceIndices[tokenAddress][index - 1]
+            .value + amount;
+        royaltyPriceIndices[tokenAddress].push(
+            RoyaltyPriceIndex({
+                blockNumber: uint32(block.number),
+                value: cumulativeRoyalty
+            })
+        );
     }
 
     /**

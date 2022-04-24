@@ -3,10 +3,11 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 /// @title  A contract to raffle off NFT for ERC20 tokens
 /// @author Critterz
-contract RaffleParty {
+contract RaffleParty is Ownable {
     struct Prize {
         address tokenAddress;
         uint96 tokenId;
@@ -415,12 +416,12 @@ contract RaffleParty {
     OWNER FUNCTIONS
     */
 
-    function setBaseRoyalty(uint256 _baseRoyalty) public {
+    function setBaseRoyalty(uint256 _baseRoyalty) public onlyOwner {
         require(_baseRoyalty <= 10000, "Royalty must be <= 10000");
         baseRoyalty = _baseRoyalty;
     }
 
-    function setOverflowRoyalty(uint256 _overflowRoyalty) public {
+    function setOverflowRoyalty(uint256 _overflowRoyalty) public onlyOwner {
         require(_overflowRoyalty <= 10000, "Royalty must be <= 10000");
         overflowRoyalty = _overflowRoyalty;
     }

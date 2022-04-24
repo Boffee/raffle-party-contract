@@ -174,7 +174,7 @@ contract RaffleParty is Ownable {
      * @param raffleId the id of the raffle to buy ticket for
      * @param ticketCount the number of tickets to buy
      */
-    function buyTicket(uint256 raffleId, uint96 ticketCount) public {
+    function buyTickets(uint256 raffleId, uint96 ticketCount) public {
         // transfer payment token frm account
         uint256 cost = raffles[raffleId].ticketPrice * ticketCount;
         IERC20(raffles[raffleId].paymentToken).transfer(msg.sender, cost);
@@ -187,7 +187,10 @@ contract RaffleParty is Ownable {
      * @param raffleId the id of the raffle to buy ticket for
      * @param ticketCount the number of tickets to buy
      */
-    function buyTicketEth(uint256 raffleId, uint96 ticketCount) public payable {
+    function buyTicketsEth(uint256 raffleId, uint96 ticketCount)
+        public
+        payable
+    {
         // transfer payment token frm account
         uint256 cost = raffles[raffleId].ticketPrice * ticketCount;
         require(msg.value == cost, "Price mismatch");

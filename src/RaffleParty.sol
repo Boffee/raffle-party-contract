@@ -226,6 +226,7 @@ contract RaffleParty is Ownable {
      */
     function claimSales(address account, uint256 raffleId) public {
         uint256 amount = getAccountTokenClaimAmount(account, raffleId);
+        require(raffles[raffleId].seed != 0, "Winner not set");
         require(amount > 0, "No sales to claim");
         if (raffles[raffleId].paymentToken == address(0)) {
             (bool sent, ) = account.call{value: amount}("");

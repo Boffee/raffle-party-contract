@@ -51,8 +51,7 @@ contract RaffleParty is Ownable {
     uint64 public constant BASE_WEIGHT = 10000;
 
     // royalty in basis points
-    uint256 public baseRoyalty = 250;
-    uint256 public overflowRoyalty = 5000;
+    uint256 public royalty = 1000;
 
     uint256 public raffleCount;
 
@@ -409,8 +408,8 @@ contract RaffleParty is Ownable {
         uint256 minimumSales = getMinimumSales(raffleId);
         return
             minimumSales *
-            baseRoyalty +
-            overflowRoyalty *
+            royalty +
+            (10000 - royalty) *
             (totalSales - minimumSales);
     }
 
@@ -427,9 +426,9 @@ contract RaffleParty is Ownable {
         uint256 totalSales = getTotalSales(raffleId);
         uint256 minimumSales = getMinimumSales(raffleId);
         return
-            (10000 - baseRoyalty) *
-            baseRoyalty +
-            (10000 - overflowRoyalty) *
+            (10000 - royalty) *
+            minimumSales +
+            royalty *
             (totalSales - minimumSales);
     }
 
@@ -500,14 +499,9 @@ contract RaffleParty is Ownable {
     OWNER FUNCTIONS
     */
 
-    function setBaseRoyalty(uint256 _baseRoyalty) public onlyOwner {
-        require(_baseRoyalty <= 10000, "Royalty must be <= 10000");
-        baseRoyalty = _baseRoyalty;
-    }
-
-    function setOverflowRoyalty(uint256 _overflowRoyalty) public onlyOwner {
-        require(_overflowRoyalty <= 10000, "Royalty must be <= 10000");
-        overflowRoyalty = _overflowRoyalty;
+    function setRoyalty(uint256 _royalty) public onlyOwner {
+        require(_royalty <= 5000, "Royalty must be <= 10000");
+        royalty = _royalty;
     }
 
     /*

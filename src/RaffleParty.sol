@@ -177,7 +177,11 @@ contract RaffleParty is Ownable {
     function buyTickets(uint256 raffleId, uint96 ticketCount) public {
         // transfer payment token frm account
         uint256 cost = raffles[raffleId].ticketPrice * ticketCount;
-        IERC20(raffles[raffleId].paymentToken).transfer(msg.sender, cost);
+        IERC20(raffles[raffleId].paymentToken).transferFrom(
+            msg.sender,
+            address(this),
+            cost
+        );
         // give tickets to account
         _sendTicket(msg.sender, raffleId, ticketCount);
     }
@@ -258,8 +262,8 @@ contract RaffleParty is Ownable {
         Raffle memory raffle = raffles[raffleId];
         require(raffle.endTimestamp < block.timestamp, "Raffle has not ended");
         require(raffle.seed == 0, "Seed already initialized");
-        uint224 royaltyAmount = uint224(getRoyaltyAmount(raffleId));
-        accumulateRoyalty(raffle.paymentToken, royaltyAmount);
+        // uint224 royaltyAmount = uint224(getRoyaltyAmount(raffleId));
+        // accumulateRoyalty(raffle.paymentToken, royaltyAmount);
         fakeRequestRandomWords(raffleId);
     }
 
@@ -310,9 +314,10 @@ contract RaffleParty is Ownable {
         uint256 raffleId,
         uint96 ticketCount
     ) internal {
-        uint96 ticketEndId = raffleTickets[raffleId][
-            raffleTickets[raffleId].length - 1
-        ].endId + ticketCount;
+        uint256 purchases = raffleTickets[raffleId].length;
+        uint96 ticketEndId = purchases > 0
+            ? raffleTickets[raffleId][purchases - 1].endId + ticketCount
+            : ticketCount;
         Ticket memory ticket = Ticket({owner: to, endId: ticketEndId});
         raffleTickets[raffleId].push(ticket);
     }
@@ -465,7 +470,7 @@ contract RaffleParty is Ownable {
      * @return ticketId the id of the ticket that won
      */
     function getWinnerTicketId(uint256 raffleId, uint256 prizeIndex)
-        internal
+        public
         view
         returns (uint256 ticketId)
     {

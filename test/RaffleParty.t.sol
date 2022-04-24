@@ -45,7 +45,9 @@ contract RafflePartyTest is CheatCodesDSTest {
             uint48(block.timestamp),
             uint48(block.timestamp + 100),
             100e18,
-            100
+            100,
+            new address[](0),
+            new uint64[](0)
         );
         assertEq(raffleId, 0);
     }
@@ -105,7 +107,9 @@ contract RafflePartyTest is CheatCodesDSTest {
             uint48(block.timestamp),
             uint48(block.timestamp + DURATION),
             PRICE,
-            MIN_TICKETS
+            MIN_TICKETS,
+            new address[](0),
+            new uint64[](0)
         );
     }
 
@@ -118,7 +122,9 @@ contract RafflePartyTest is CheatCodesDSTest {
             uint48(block.timestamp),
             uint48(block.timestamp + DURATION),
             PRICE,
-            MIN_TICKETS
+            MIN_TICKETS,
+            new address[](0),
+            new uint64[](0)
         );
     }
 

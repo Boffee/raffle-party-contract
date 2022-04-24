@@ -80,6 +80,8 @@ contract RaffleParty is Ownable {
      * @param endTimestamp the timestamp at which the raffle ends
      * @param ticketPrice the price of each ticket
      * @param minTickets the minimum number of tickets required for raffle to succeed
+     * @param poolPrizeTokens the list of ERC721 tokens allowed to join the raffle pool
+     * @param poolPrizeTokenWeights the list of weights of the ERC721 tokens allowed to join the raffle pool
      * @return raffleId the id of the raffle
      */
     function createRaffle(
@@ -89,7 +91,9 @@ contract RaffleParty is Ownable {
         uint48 startTimestamp,
         uint48 endTimestamp,
         uint256 ticketPrice,
-        uint96 minTickets
+        uint96 minTickets,
+        address[] calldata poolPrizeTokens,
+        uint64[] calldata poolPrizeTokenWeights
     ) public returns (uint256 raffleId) {
         require(prizeToken != address(0));
         require(endTimestamp > block.timestamp);
@@ -123,6 +127,18 @@ contract RaffleParty is Ownable {
         );
 
         raffleAccountWeights[raffleId][msg.sender] = BASE_WEIGHT;
+
+        for (uint256 i = 0; i < poolPrizeTokens.length; i++) {
+            require(poolPrizeTokens[i] != address(0));
+            require(poolPrizeTokenWeights[i] > 0);
+
+            rafflePoolPrizeTokenConfigs[raffleId].push(
+                PoolPrizeTokenConfig({
+                    tokenAddress: poolPrizeTokens[i],
+                    weight: poolPrizeTokenWeights[i]
+                })
+            );
+        }
     }
 
     function addPoolPrize(

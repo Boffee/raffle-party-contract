@@ -235,7 +235,9 @@ contract RaffleParty is Ownable {
             "Not ticket owner"
         );
         uint256 ticketId = getWinnerTicketId(raffleId, prizeIndex);
-        uint96 startId = raffleTickets[raffleId][ticketPurchaseIndex - 1].endId;
+        uint96 startId = ticketPurchaseIndex > 0
+            ? raffleTickets[raffleId][ticketPurchaseIndex - 1].endId
+            : 0;
         uint96 endId = raffleTickets[raffleId][ticketPurchaseIndex].endId;
         require(
             ticketId >= startId && ticketId < endId,

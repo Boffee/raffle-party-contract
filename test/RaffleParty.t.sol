@@ -5,6 +5,7 @@ import "./mock/CheatCodes.sol";
 import "./mock/DummyERC721.sol";
 import "./mock/DummyERC20.sol";
 import "../src/RaffleParty.sol";
+import "forge-std/console.sol";
 
 contract RafflePartyTest is CheatCodesDSTest {
     RaffleParty rp;
@@ -89,7 +90,15 @@ contract RafflePartyTest is CheatCodesDSTest {
         rp.buyTickets(raffleId, MIN_TICKETS);
         cheats.warp(block.timestamp + DURATION + 1);
         rp.initializeSeed(raffleId);
-        rp.getWinner(raffleId, 0);
+        uint256 prizeIndex = 0;
+        uint256 ticketId = rp.getWinnerTicketId(raffleId, prizeIndex);
+        address winner = rp.getWinner(raffleId, prizeIndex);
+        uint256 ticketPurchaseIndex = rp.getTicketPurchaseIndex(
+            raffleId,
+            ticketId
+        );
+        rp.claimPrize(winner, raffleId, prizeIndex, ticketPurchaseIndex);
+        assertEq(nft1.ownerOf(0), winner);
     }
 
     function testBuyTicketsEth() public {
@@ -100,6 +109,10 @@ contract RafflePartyTest is CheatCodesDSTest {
 
     function createDummyRaffle() public returns (uint256 raffleId) {
         nft1.setApprovalForAll(address(rp), true);
+        address[] memory poolPrizeTokens = new address[](1);
+        poolPrizeTokens[0] = address(nft2);
+        uint64[] memory poolPrizeTokenWeights = new uint64[](1);
+        poolPrizeTokenWeights[0] = 5000;
         raffleId = rp.createRaffle(
             address(nft1),
             1,
@@ -108,8 +121,8 @@ contract RafflePartyTest is CheatCodesDSTest {
             uint48(block.timestamp + DURATION),
             PRICE,
             MIN_TICKETS,
-            new address[](0),
-            new uint64[](0)
+            poolPrizeTokens,
+            poolPrizeTokenWeights
         );
     }
 
